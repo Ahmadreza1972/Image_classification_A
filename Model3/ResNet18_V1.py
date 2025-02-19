@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from CustomResNet18 import CustomResNet18
+from Models.CustomResNet18 import CustomResNet18
 from DataLoad import DataLoad
 
 class ModelProcess:

@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.path
+*.pth
 
 # Ignore environment folders
 venv/
@@ -19,5 +19,5 @@ venv/
 Thumbs.db  # Windows system file
 
 # Ignore specific folders
-/data/      # Ignore entire data folder
+/Data/      # Ignore entire data folder
 /models/    # Ignore trained models
