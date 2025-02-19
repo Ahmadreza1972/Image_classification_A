@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from torchvision.transforms.functional import to_pil_image
 import matplotlib.pyplot as plt
 from CustomResNet18 import CustomResNet18
 from DataLoad import DataLoad
@@ -26,13 +27,17 @@ class ModelProcess:
         self._model1_data_path=self._config1.directories["model1_data_path"] 
         self._model2_data_path=self._config1.directories["model2_data_path"] 
         self._model3_data_path=self._config1.directories["model3_data_path"] 
-        
+        self._group_labels_path=self._config1.directories["group_labels"]
+        with open(self._group_labels_path, "r") as file:
+            labels = [line.strip() for line in file]  # Convert each line to a float
+        self._group_labels=labels
         self._model1_weights_path = self._config1.directories["model1_weights"]  
         self._model2_weights_path = self._config1.directories["model2_weights"]  
         self._model3_weights_path = self._config1.directories["model3_weights"] 
         self._models_weights_path=[self._model1_weights_path,self._model2_weights_path,self._model3_weights_path] 
          
         self._save_log=self._config1.directories["save_log"]
+        self._save_graph=self._config1.directories["save_log"]
         
         self._log=Logger(self._save_log,"fusion")
         
@@ -50,25 +55,17 @@ class ModelProcess:
         self._results = pd.DataFrame(columns=["True label"])
         self._orginal_labels=[[0,10,20,30,40],[1,11,21,31,41],[2,12,22,32,42]]
 
-    def save_result(self,model,tr_ac,val_ac,tr_los,val_los):
-        
-        #save trained model weight
-        save_dir = os.path.dirname(self._save_path)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        torch.save(model.state_dict(), self._save_path)
-        
-        #save validation and train graph
-        fig,ax=plt.subplots(ncols=2)
-        ax[0].plot(tr_ac, label="Train_ac")
-        ax[0].plot(val_ac, label="val_ac")
-        ax[0].legend()
-        ax[1].plot(tr_los, label="Train_los")
-        ax[1].plot(val_los, label="val_los")
-        ax[1].legend()
+    def save_result(self,img,act_label,pre_label,pic_num):
+
+        # Show the image
+        img = img.permute(1, 2, 0)
+        plt.imshow(img)
+        plt.title(f"orginal:{self._group_labels[act_label]} predicted:{self._group_labels[pre_label]}")
+        plt.axis("off")  # Remove axes
+        #plt.show()
         
         # Save the figure
-        plt.savefig(self._save_graph, dpi=300, bbox_inches='tight')  # High-quality save
+        plt.savefig(os.path.join(self._save_graph, f"results{pic_num}.png"), dpi=300, bbox_inches='tight')  # High-quality save
     
     def get_predictions_and_probabilities(self,model, orginallabels,dataloader, device='cpu'):
         model.to(device)
@@ -160,9 +157,9 @@ class ModelProcess:
         self._log.log("======== Starting Model Training ========")
 
         # Load dataset
-        self._dataloader,combined_labels=self.data_reader()
-
-        # Initialize model
+        self._dataloader,_=self.data_reader()
+        
+         # Initialize model
         self._log.log("Initializing the model...")
         model = CustomResNet18(num_classes=self._num_classes, freeze_layers=False)
         
@@ -216,12 +213,13 @@ class ModelProcess:
         # Compute accuracy
         accuracy = (detected_labels == y_test).mean()
 
-        self._log.log("Meta-Model Accuracy:", accuracy)  
+        self._log.log(f"Meta-Model Accuracy:{accuracy}")  
     
     def get_final_estimation_bymax(self):
         
         total_correct=0
         total_row=0
+        data_iter = iter(self._dataloader)
         for row in range(len(self._results)):
             pr1 = max(np.array(self._results.loc[row]["model 1 prp"]))
             pr2 = max(np.array(self._results.loc[row]["model 2 prp"]))
@@ -231,12 +229,19 @@ class ModelProcess:
 
             true_labels=self._results.loc[row]["True label"]
             predictedlabel=self._results.loc[row][f"model {elected+1} label"]
-
+            
+            
+            images, labels = next(data_iter)  # Fetch a batch
+            image = images[row % len(images)]
+            if row % 100 ==0:
+                self.save_result(image,labels,predictedlabel,row)
+            
+            
             total_row+=1
             if (true_labels==predictedlabel):
                 total_correct+=1
         accuracy=total_correct/total_row        
-        self._log.log("Meta-Model Accuracy:", accuracy)
+        self._log.log(f"Meta-Model Accuracy:{accuracy}" )
             
 model=ModelProcess()
 model.models_output_colector()
