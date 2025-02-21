@@ -245,5 +245,5 @@ class ModelProcess:
             
 model=ModelProcess()
 model.models_output_colector()
-#model.get_final_estimation()
-model.get_final_estimation_bymax()
+model.get_final_estimation()
+#model.get_final_estimation_bymax()

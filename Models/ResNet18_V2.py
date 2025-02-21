@@ -24,7 +24,7 @@ class ModelProcess:
         self._save_graph=self._config1.directories["output_graph"]
         self._save_log=self._config1.directories["save_log"]
         
-        self._log=Logger(self._save_log,"fusion")
+        self._log=Logger(self._save_log,"model2")
         
         # set hyperparameters
         self._batch_size = self._config1.hyperparameters["batch_size"]

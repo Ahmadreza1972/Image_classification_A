@@ -76,7 +76,8 @@ class ModelProcess:
         self._log.log("Initializing the model...")
         model = CustomResNet18(num_classes=self._num_classes, freeze_layers=False)
         trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        self._log.log(f"Model initialized with {trainable_params:,} trainable parameters.")
+        num_layers = sum(1 for _ in model.modules())
+        self._log.log(f"Model initialized with {trainable_params:,} trainable parameters")
 
         # Log model architecture
         self._log.log(f"Model Architecture: \n{model}")
